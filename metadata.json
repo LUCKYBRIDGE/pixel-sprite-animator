@@ -1,0 +1,5 @@
+{
+  "name": "Pixel Sprite Animator",
+  "description": "An application to generate a historical figure's portrait, convert it into a 3-head-proportion pixel art character, and then generate a full 14-frame animation sprite sheet for game development.",
+  "requestFramePermissions": []
+}
