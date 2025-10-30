@@ -631,10 +631,12 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
                     }
 
                     if (placement === 'below') {
-                        anchorY = Math.min(anchorY, window.innerHeight - viewportPadding);
+                        const maxY = window.innerHeight - viewportPadding - estimatedModalHeight;
+                        anchorY = Math.min(anchorY, maxY);
                         anchorY = Math.max(anchorY, viewportPadding);
                     } else {
-                        anchorY = Math.max(anchorY, viewportPadding);
+                        const minY = viewportPadding + estimatedModalHeight;
+                        anchorY = Math.max(anchorY, minY);
                         anchorY = Math.min(anchorY, window.innerHeight - viewportPadding);
                     }
 
