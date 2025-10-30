@@ -201,6 +201,8 @@ The input describes a historical figure and may include other details like attir
 -   **Adherence to User's Style:** If the user's input specifies an art style (like '한국화', '수채화', '유화', '컨셉 아트'), you MUST render the image in that style. Faithfully capture the essence of the requested style, whether it's the brushstrokes of an oil painting, the delicate washes of watercolor, or the bold lines and ink wash ('먹') of '한국화'.
 -   **Default Style:** If no specific style is mentioned, render the portrait in a detailed and polished digital illustration style that feels like masterpiece concept art for a high-end game or film.
 
+**REFERENCE GUIDELINES:** When the historical figure is known to have famous artworks or canonical portraits (e.g., "Mona Lisa" for Leonardo da Vinci, official court portraits of monarchs, or widely circulated photographs), study those sources and carry over the distinctive visual traits—facial proportions, hairstyle, attire, posture, and emblematic accessories—into the composition. Use them as strong visual anchors while still honoring any new stylistic directions supplied by the user.
+
 Regardless of the style, the portrait should exude a cool, charismatic, and weighty presence. The image must be purely pictorial and must NOT contain any text, letters, numbers, speech bubbles, words, or dialogue.
 
 The absolute, non-negotiable highest priority remains the historical accuracy of the attire, as dictated by the figure's context. The clothing, colors, and insignias must be based on thorough historical research of verified records for their specific time period and status. This means the costume must be a faithful representation, avoiding common anachronisms or fictionalized popular depictions.
