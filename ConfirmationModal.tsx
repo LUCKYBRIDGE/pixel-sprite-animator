@@ -8,6 +8,7 @@ interface ConfirmationModalProps {
   confirmText?: string;
   cancelText?: string;
   children: React.ReactNode;
+  anchorPosition?: { x: number; y: number; placement: 'above' | 'below' };
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ 
@@ -17,7 +18,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   title, 
   confirmText = "Yes, add all",
   cancelText = "No, just this one",
-  children 
+  children,
+  anchorPosition,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const scrollYRef = useRef<number>(0);
@@ -71,6 +73,25 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   if (!isOpen) return null;
 
+  const transformParts: string[] = [];
+  if (anchorPosition) {
+    transformParts.push(anchorPosition.placement === 'above' ? 'translate(-50%, -100%)' : 'translate(-50%, 0)');
+  }
+  transformParts.push(`scale(${isAnimating ? 1 : 0.95})`);
+
+  const modalStyle: React.CSSProperties = {
+    opacity: isAnimating ? 1 : 0,
+    transform: transformParts.join(' '),
+  };
+
+  if (anchorPosition) {
+    Object.assign(modalStyle, {
+      position: 'absolute' as const,
+      top: anchorPosition.y,
+      left: anchorPosition.x,
+    });
+  }
+
   return (
     <div 
       className={`fixed inset-0 bg-black flex items-center justify-center z-50 transition-opacity duration-300 ease-out ${isAnimating ? 'bg-opacity-75' : 'bg-opacity-0'}`}
@@ -79,7 +100,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       onClick={onCancel}
     >
       <div 
-        className={`bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4 border border-gray-700 transform transition-all duration-300 ease-out ${isAnimating ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+        className="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4 border border-gray-700 transition-all duration-300 ease-out"
+        style={modalStyle}
         onClick={(e) => e.stopPropagation()} // Prevent modal from closing when clicking inside
       >
         <h3 className="text-xl font-bold text-white mb-4">{title}</h3>

@@ -511,6 +511,12 @@ const getFigureRecommendations = (tag: Tag): string[] => {
   return Array.from(recommendationSet);
 };
 
+type ModalAnchor = {
+  x: number;
+  y: number;
+  placement: 'above' | 'below';
+};
+
 const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName = '', error, onShowHistory, history, onHistorySelect }) => {
   const [initialState] = useState(() => {
     const tags = initialName.trim() ? initialName.split(',').map(s => s.trim()).filter(Boolean) : ['전신샷'];
@@ -523,6 +529,7 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
   const [selectedTags, setSelectedTags] = useState<Set<string>>(initialState.tagSet);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tagToAdd, setTagToAdd] = useState<Tag | null>(null);
+  const [modalAnchor, setModalAnchor] = useState<ModalAnchor | null>(null);
   const [uploadedImage, setUploadedImage] = useState<{ file: File, previewUrl: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -582,7 +589,7 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
     setSelectedTags(new Set(tagsFromName));
   };
 
-  const handleTagClick = (tag: Tag) => {
+  const handleTagClick = (tag: Tag, event: React.MouseEvent<HTMLButtonElement>) => {
     if (selectedTags.has(tag.name)) {
         const newTags = new Set<string>(selectedTags);
         newTags.delete(tag.name);
@@ -592,6 +599,36 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
         if (tag.category === 'figure') {
             const recommendations = getFigureRecommendations(tag);
             if (recommendations.length > 0) {
+                const rect = event.currentTarget.getBoundingClientRect();
+                const viewportPadding = 24;
+                const estimatedModalHeight = 280;
+                const estimatedHalfWidth = 180;
+                let placement: 'above' | 'below' = 'below';
+                let top = rect.bottom + 12;
+
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                if (spaceBelow < estimatedModalHeight + viewportPadding && spaceAbove > spaceBelow) {
+                    placement = 'above';
+                    top = rect.top - 12;
+                }
+
+                if (placement === 'below') {
+                    top = Math.min(top, window.innerHeight - viewportPadding - estimatedModalHeight);
+                    top = Math.max(viewportPadding, top);
+                } else {
+                    top = Math.max(top, viewportPadding + estimatedModalHeight);
+                    top = Math.min(top, window.innerHeight - viewportPadding);
+                }
+
+                let centerX = rect.left + rect.width / 2;
+                if (centerX - estimatedHalfWidth < viewportPadding) {
+                    centerX = viewportPadding + estimatedHalfWidth;
+                } else if (centerX + estimatedHalfWidth > window.innerWidth - viewportPadding) {
+                    centerX = window.innerWidth - viewportPadding - estimatedHalfWidth;
+                }
+
+                setModalAnchor({ x: centerX, y: top, placement });
                 setTagToAdd(tag);
                 setIsModalOpen(true);
                 return;
@@ -630,6 +667,7 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
     updateInputFromTags(newTags);
     setIsModalOpen(false);
     setTagToAdd(null);
+    setModalAnchor(null);
   };
 
   const handleModalCancel = () => {
@@ -647,6 +685,7 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
     updateInputFromTags(newTags);
     setIsModalOpen(false);
     setTagToAdd(null);
+    setModalAnchor(null);
   };
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -698,15 +737,19 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
       }
     }
     
-    if (context?.recommendations) {
-        description += `\n\n추천 태그: ${context.recommendations.join(', ')}`;
+    const tooltipRecs = tag.category === 'figure'
+      ? getFigureRecommendations(tag)
+      : context?.recommendations ?? [];
+
+    if (tooltipRecs.length) {
+        description += `\n\n추천 태그: ${tooltipRecs.join(', ')}`;
     }
 
     return (
         <div className="relative group">
             <button
                 type="button"
-                onClick={() => handleTagClick(tag)}
+                onClick={(e) => handleTagClick(tag, e)}
                 className={`px-3 py-1 text-sm rounded-full transition-colors whitespace-nowrap ${
                     selectedTags.has(tag.name)
                         ? `${categoryColors[tag.category]} text-white ring-2 ring-offset-2 ring-offset-gray-800 ring-white`
@@ -909,6 +952,7 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
         title={`Add Recommended Tags?`}
         confirmText="Yes, add recommendations"
         cancelText="No, just add the figure"
+        anchorPosition={modalAnchor ?? undefined}
       >
         <p>Would you like to add the recommended tags for <strong className="text-purple-400">{tagToAdd?.name}</strong> to automatically create a more detailed prompt?</p>
         {tagToAdd && recommendedTagsForModal.length > 0 && (
