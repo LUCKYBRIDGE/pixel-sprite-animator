@@ -599,39 +599,58 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
         if (tag.category === 'figure') {
             const recommendations = getFigureRecommendations(tag);
             if (recommendations.length > 0) {
-                event.currentTarget.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
-                const rect = event.currentTarget.getBoundingClientRect();
+                const button = event.currentTarget;
                 const viewportPadding = 24;
                 const estimatedModalHeight = 280;
                 const estimatedHalfWidth = 180;
-                let placement: 'above' | 'below' = 'below';
-                let top = rect.bottom + 12;
 
-                const spaceBelow = window.innerHeight - rect.bottom;
-                const spaceAbove = rect.top;
-                if (spaceBelow < estimatedModalHeight + viewportPadding && spaceAbove > spaceBelow) {
-                    placement = 'above';
-                    top = rect.top - 12;
-                }
+                const openModalNearButton = (attempt: number) => {
+                    const rect = button.getBoundingClientRect();
+                    const fullyVisible =
+                        rect.top >= viewportPadding &&
+                        rect.bottom <= window.innerHeight - viewportPadding;
 
-                if (placement === 'below') {
-                    top = Math.min(top, window.innerHeight - viewportPadding - estimatedModalHeight);
-                    top = Math.max(viewportPadding, top);
-                } else {
-                    top = Math.max(top, viewportPadding + estimatedModalHeight);
-                    top = Math.min(top, window.innerHeight - viewportPadding);
-                }
+                    if (!fullyVisible && attempt < 5) {
+                        button.scrollIntoView({
+                            block: 'center',
+                            inline: 'center',
+                            behavior: attempt === 0 ? 'smooth' as ScrollBehavior : 'auto',
+                        });
+                        window.setTimeout(() => openModalNearButton(attempt + 1), 80);
+                        return;
+                    }
 
-                let centerX = rect.left + rect.width / 2;
-                if (centerX - estimatedHalfWidth < viewportPadding) {
-                    centerX = viewportPadding + estimatedHalfWidth;
-                } else if (centerX + estimatedHalfWidth > window.innerWidth - viewportPadding) {
-                    centerX = window.innerWidth - viewportPadding - estimatedHalfWidth;
-                }
+                    let placement: 'above' | 'below' = 'below';
+                    let anchorY = rect.bottom + 12;
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    const spaceAbove = rect.top;
 
-                setModalAnchor({ x: centerX, y: top, placement });
-                setTagToAdd(tag);
-                setIsModalOpen(true);
+                    if (spaceBelow < estimatedModalHeight + viewportPadding && spaceAbove > spaceBelow) {
+                        placement = 'above';
+                        anchorY = rect.top - 12;
+                    }
+
+                    if (placement === 'below') {
+                        anchorY = Math.min(anchorY, window.innerHeight - viewportPadding);
+                        anchorY = Math.max(anchorY, viewportPadding);
+                    } else {
+                        anchorY = Math.max(anchorY, viewportPadding);
+                        anchorY = Math.min(anchorY, window.innerHeight - viewportPadding);
+                    }
+
+                    let centerX = rect.left + rect.width / 2;
+                    if (centerX - estimatedHalfWidth < viewportPadding) {
+                        centerX = viewportPadding + estimatedHalfWidth;
+                    } else if (centerX + estimatedHalfWidth > window.innerWidth - viewportPadding) {
+                        centerX = window.innerWidth - viewportPadding - estimatedHalfWidth;
+                    }
+
+                    setModalAnchor({ x: centerX, y: anchorY, placement });
+                    setTagToAdd(tag);
+                    setIsModalOpen(true);
+                };
+
+                window.requestAnimationFrame(() => openModalNearButton(0));
                 return;
             }
         }
