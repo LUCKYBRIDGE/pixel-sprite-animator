@@ -465,6 +465,52 @@ const figureContext: Record<string, { era: string[], role: string[], recommendat
   'Wright brothers': { era: ['근현대사'], role: ['발명가'], recommendations: ['발명가', '실험하는'] },
 };
 
+const eraGroupSuggestions: Record<string, string[]> = {
+  Gojoseon: ['고조선'],
+  ThreeKingdoms_Goguryeo: ['삼국시대', '고구려'],
+  ThreeKingdoms_Baekje: ['삼국시대', '백제'],
+  ThreeKingdoms_Silla: ['삼국시대', '신라'],
+  UnifiedSilla: ['통일신라'],
+  LaterThreeKingdoms: ['후삼국시대'],
+  Goryeo: ['고려'],
+  Joseon: ['조선'],
+  Modern_Korea: ['근현대사'],
+  Ancient_Egypt: ['고대 이집트'],
+  Ancient_China: ['세계사'],
+  Ancient_Greece: ['고대 그리스'],
+  Ancient_Rome: ['로마 제국'],
+  Medieval: ['중세'],
+  Renaissance: ['르네상스'],
+  Enlightenment: ['계몽주의'],
+  Modern_World: ['근현대사', '세계사'],
+};
+
+const getFigureRecommendations = (tag: Tag): string[] => {
+  if (tag.category !== 'figure') {
+    return [];
+  }
+
+  const context = figureContext[tag.name];
+  const recommendationSet = new Set<string>(context?.recommendations ?? []);
+
+  if (recommendationSet.size === 0) {
+    context?.role?.forEach((role) => recommendationSet.add(role));
+    context?.era?.forEach((era) => recommendationSet.add(era));
+  }
+
+  if (tag.era_group) {
+    eraGroupSuggestions[tag.era_group]?.forEach((eraTag) => recommendationSet.add(eraTag));
+  }
+
+  if (tag.nationality === 'Korean') {
+    recommendationSet.add('한국사');
+  } else if (tag.nationality === 'World') {
+    recommendationSet.add('세계사');
+  }
+
+  return Array.from(recommendationSet);
+};
+
 const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName = '', error, onShowHistory, history, onHistorySelect }) => {
   const [initialState] = useState(() => {
     const tags = initialName.trim() ? initialName.split(',').map(s => s.trim()).filter(Boolean) : ['전신샷'];
@@ -543,28 +589,31 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
         setSelectedTags(newTags);
         updateInputFromTags(newTags);
     } else {
-        if (tag.category === 'figure' && figureContext[tag.name]?.recommendations) {
-            setTagToAdd(tag);
-            setIsModalOpen(true);
-        } else {
-            const newTags = new Set<string>(selectedTags);
-            if (tag.category === 'figure') {
-                popularTags.forEach(t => {
-                    if (t.category === 'figure' && newTags.has(t.name)) {
-                        newTags.delete(t.name);
-                    }
-                });
+        if (tag.category === 'figure') {
+            const recommendations = getFigureRecommendations(tag);
+            if (recommendations.length > 0) {
+                setTagToAdd(tag);
+                setIsModalOpen(true);
+                return;
             }
-            newTags.add(tag.name);
-            setSelectedTags(newTags);
-            updateInputFromTags(newTags);
         }
+        const newTags = new Set<string>(selectedTags);
+        if (tag.category === 'figure') {
+            popularTags.forEach(t => {
+                if (t.category === 'figure' && newTags.has(t.name)) {
+                    newTags.delete(t.name);
+                }
+            });
+        }
+        newTags.add(tag.name);
+        setSelectedTags(newTags);
+        updateInputFromTags(newTags);
     }
   };
 
   const handleModalConfirm = () => {
     if (!tagToAdd) return;
-    const recommendations = figureContext[tagToAdd.name]?.recommendations || [];
+    const recommendations = getFigureRecommendations(tagToAdd);
     const tagsToAdd = [tagToAdd.name, ...recommendations];
     
     const newTags = new Set<string>(selectedTags);
@@ -676,6 +725,8 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
   const placeholderText = uploadedImage 
     ? "e.g., in the style of a renaissance painting, as a Joseon king"
     : "e.g., Yi Sun-sin in armor";
+
+  const recommendedTagsForModal = tagToAdd ? getFigureRecommendations(tagToAdd) : [];
 
   return (
     <>
@@ -860,11 +911,11 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
         cancelText="No, just add the figure"
       >
         <p>Would you like to add the recommended tags for <strong className="text-purple-400">{tagToAdd?.name}</strong> to automatically create a more detailed prompt?</p>
-        {tagToAdd && figureContext[tagToAdd.name]?.recommendations && (
+        {tagToAdd && recommendedTagsForModal.length > 0 && (
             <div className="mt-4 p-3 bg-gray-700/50 rounded-lg">
                 <p className="text-sm text-gray-400">Recommended tags:</p>
                 <div className="flex flex-wrap gap-2 mt-2">
-                    {figureContext[tagToAdd.name].recommendations?.map(rec => (
+                    {recommendedTagsForModal.map(rec => (
                         <span key={rec} className="px-2 py-1 text-xs bg-gray-600 rounded-md text-gray-200">{rec}</span>
                     ))}
                 </div>
