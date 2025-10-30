@@ -106,11 +106,9 @@ This is variation ${i + 1}. The image must NOT contain any text, letters, or num
         return Promise.all(results);
     } 
     
-    // Original text-to-image logic using Imagen
+    // Text-only prompt logic using Gemini image model
     else {
-        const response = await ai.models.generateImages({
-            model: 'imagen-4.0-generate-001',
-            prompt: `Create a breathtaking, high-quality portrait based on the user's input: "${promptText}".
+        const basePrompt = `Create a breathtaking, high-quality portrait based on the user's input: "${promptText}".
 
 The input describes a historical figure and may include other details like attire, actions, setting, or a specific art style (e.g., "한국화", "유화", "sketch").
 
@@ -130,15 +128,33 @@ Regardless of the style, the portrait should exude a cool, charismatic, and weig
 
 The absolute, non-negotiable highest priority remains the historical accuracy of the attire, as dictated by the figure's context. The clothing, colors, and insignias must be based on thorough historical research of verified records for their specific time period and status. This means the costume must be a faithful representation, avoiding common anachronisms or fictionalized popular depictions.
 
-Avoid stereotypes and ensure the representation is respectful. The art style should feature cinematic, atmospheric lighting to emphasize their gravitas.`,
-            config: {
-                numberOfImages: 3,
-                outputMimeType: 'image/png',
-                aspectRatio: '1:1',
-            },
-        });
+Avoid stereotypes and ensure the representation is respectful. The art style should feature cinematic, atmospheric lighting to emphasize their gravitas.`;
 
-        return response.generatedImages.map(image => `data:image/png;base64,${image.image.imageBytes}`);
+        const results: Promise<string>[] = [];
+
+        for (let i = 0; i < 3; i++) {
+            const promise = (async () => {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash-image',
+                    contents: {
+                        parts: [
+                            { text: `${basePrompt}\n\nThis is variation ${i + 1}. The image must NOT contain any text, letters, or numbers.` },
+                        ]
+                    },
+                    config: {
+                        responseModalities: [Modality.IMAGE],
+                    },
+                });
+                const part = response.candidates?.[0]?.content?.parts?.[0];
+                if (part?.inlineData) {
+                    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                }
+                throw new Error(`Failed to generate portrait variation ${i + 1}`);
+            })();
+            results.push(promise);
+        }
+
+        return Promise.all(results);
     }
 };
 
