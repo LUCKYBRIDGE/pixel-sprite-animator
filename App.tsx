@@ -153,7 +153,12 @@ function App() {
         
         setHistory(prevHistory => {
             const updatedHistory = [newCreation, ...prevHistory];
-            localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
+            try {
+              localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
+            } catch (storageError) {
+              console.warn('Failed to persist history, clearing stored history.', storageError);
+              localStorage.removeItem(HISTORY_STORAGE_KEY);
+            }
             return updatedHistory;
         });
 

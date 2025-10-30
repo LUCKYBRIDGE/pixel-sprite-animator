@@ -599,6 +599,7 @@ const StepIntro: React.FC<StepIntroProps> = ({ onStart, isLoading, initialName =
         if (tag.category === 'figure') {
             const recommendations = getFigureRecommendations(tag);
             if (recommendations.length > 0) {
+                event.currentTarget.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
                 const rect = event.currentTarget.getBoundingClientRect();
                 const viewportPadding = 24;
                 const estimatedModalHeight = 280;
